@@ -50,7 +50,7 @@ public:
 		lp_nh.param<std::string>("tf/frame_id", tf_frame_id, "local_origin");
 		lp_nh.param<std::string>("tf/child_frame_id", tf_child_frame_id, "fcu");
 		// nav_msgs/Odometry info
-		lp_nh.param<std::string>("tf/base_link_frame_id",tf_base_link_frame_id,"base_link");
+		lp_nh.param<std::string>("tf/base_link_frame_id",tf_base_link_frame_id,"base_link_aircraft");
 
 		local_position = lp_nh.advertise<geometry_msgs::PoseStamped>("pose", 10);
 		local_velocity = lp_nh.advertise<geometry_msgs::TwistStamped>("velocity", 10);
@@ -82,25 +82,42 @@ private:
 		mavlink_msg_local_position_ned_decode(msg, &pos_ned);
 
 		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto position = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.x, pos_ned.y, pos_ned.z),ned_enu);
-		auto velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.vx, pos_ned.vy, pos_ned.vz),ned_enu);
+		auto enu_position = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.x, pos_ned.y, pos_ned.z),ned_enu);
+		auto enu_velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.vx, pos_ned.vy, pos_ned.vz),ned_enu);
+
 		auto orientation = uas->get_attitude_orientation();
 		auto angular_velocity = uas->get_attitude_angular_velocity();
 
+		auto enu_to_body_quad = Eigen::Quaterniond(orientation.w, orientation.x, orientation.y, orientation.z).inverse();
+		auto enu_angular_velocity = Eigen::Vector3d(angular_velocity.x, angular_velocity.y, angular_velocity.z);
+		Eigen::Transform<double, 3, Eigen::Affine> enu_to_body_rot(enu_to_body_quad);
+		auto body_linear_velocity = enu_to_body_rot * enu_velocity;
+		auto body_angular_velocity = enu_to_body_rot * enu_angular_velocity;
+
 		auto pose = boost::make_shared<geometry_msgs::PoseStamped>();
 		auto twist = boost::make_shared<geometry_msgs::TwistStamped>();
+		auto odom = boost::make_shared<nav_msgs::Odometry>();
 
 		pose->header = uas->synchronized_header(frame_id, pos_ned.time_boot_ms);
 		twist->header = pose->header;
 
-		tf::pointEigenToMsg(position, pose->pose.position);
+		tf::pointEigenToMsg(enu_position, pose->pose.position);
 		pose->pose.orientation = orientation;
 
-		tf::vectorEigenToMsg(velocity,twist->twist.linear);
+		tf::vectorEigenToMsg(enu_velocity,twist->twist.linear);
 		twist->twist.angular = angular_velocity;
 		
 		local_position.publish(pose);
 		local_velocity.publish(twist);
+
+		odom->header.stamp = pose->header.stamp;
+		odom->header.frame_id = tf_frame_id;
+		odom->child_frame_id = tf_base_link_frame_id;
+		tf::vectorEigenToMsg(body_linear_velocity,odom->twist.twist.linear);
+		tf::vectorEigenToMsg(body_angular_velocity,odom->twist.twist.angular);
+		odom->pose.pose = pose->pose;
+
+		local_odom.publish(odom);
 
 		if (tf_send) {
 			geometry_msgs::TransformStamped transform;
@@ -110,7 +127,7 @@ private:
 			transform.child_frame_id = tf_child_frame_id;
 
 			transform.transform.rotation = orientation;
-			tf::vectorEigenToMsg(position, transform.transform.translation);
+			tf::vectorEigenToMsg(enu_position, transform.transform.translation);
 
 			uas->tf2_broadcaster.sendTransform(transform);
 		}
