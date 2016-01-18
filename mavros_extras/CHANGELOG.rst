@@ -2,6 +2,27 @@
 Changelog for package mavros_extras
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.16.5 (2016-01-11)
+-------------------
+
+0.16.4 (2015-12-14)
+-------------------
+
+0.16.3 (2015-11-19)
+-------------------
+
+0.16.2 (2015-11-17)
+-------------------
+
+0.16.1 (2015-11-13)
+-------------------
+
+0.16.0 (2015-11-09)
+-------------------
+* gcs_bridge `#394 <https://github.com/mavlink/mavros/issues/394>`_: enable both UDPROS and TCPROS transports
+* extras fix `#392 <https://github.com/mavlink/mavros/issues/392>`_: add additional subscription for PoseWithCovarianceStamped
+* Contributors: Vladimir Ermakov
+
 0.15.0 (2015-09-17)
 -------------------
 * extras `#387 <https://github.com/mavlink/mavros/issues/387>`_: fix header stamp in joint_states

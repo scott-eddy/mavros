@@ -69,8 +69,9 @@ private:
 		 */
 		uint16_t ignore_all_except_v_xyz_yr = (1 << 10) | (7 << 6) | (7 << 0);
 
-		auto vel = UAS::transform_frame_enu_ned(vel_enu);
-		auto yr = UAS::transform_frame_enu_ned(Eigen::Vector3d(0.0, 0.0, yaw_rate));
+		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
+		auto vel = UAS::transform_frame_enu_ned(vel_enu,enu_ned);
+		auto yr = UAS::transform_frame_enu_ned(Eigen::Vector3d(0.0, 0.0, yaw_rate),enu_ned);
 
 		set_position_target_local_ned(stamp.toNSec() / 1000000,
 				MAV_FRAME_LOCAL_NED,

@@ -94,16 +94,17 @@ private:
 		Eigen::Quaterniond q_enu;
 		float q[4];
 
+		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
 		tf::quaternionMsgToEigen(pose->pose.orientation, q_enu);
 		UAS::quaternion_to_mavlink(
-				UAS::transform_frame_enu_ned(q_enu),
+				UAS::transform_frame_enu_ned(q_enu,enu_ned),
 				q);
 
 		auto position = UAS::transform_frame_enu_ned(
 				Eigen::Vector3d(
 					pose->pose.position.x,
 					pose->pose.position.y,
-					pose->pose.position.z));
+					pose->pose.position.z),enu_ned);
 
 		mocap_pose_send(pose->header.stamp.toNSec() / 1000,
 				q,
@@ -118,16 +119,17 @@ private:
 		Eigen::Quaterniond q_enu;
 		float q[4];
 
+		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
 		tf::quaternionMsgToEigen(trans->transform.rotation, q_enu);
 		UAS::quaternion_to_mavlink(
-				UAS::transform_frame_enu_ned(q_enu),
+				UAS::transform_frame_enu_ned(q_enu,enu_ned),
 				q);
 
 		auto position = UAS::transform_frame_enu_ned(
 				Eigen::Vector3d(
 					trans->transform.translation.x,
 					trans->transform.translation.y,
-					trans->transform.translation.z));
+					trans->transform.translation.z),enu_ned);
 
 		mocap_pose_send(trans->header.stamp.toNSec() / 1000,
 				q,

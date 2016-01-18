@@ -23,10 +23,13 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 
+#include <nav_msgs/Odometry.h>
+
 namespace mavplugin {
 /**
  * @brief Local position plugin.
- * Publish local position to TF and PositionStamped
+ * Publish local position to TF, PositionStamped, TwistStamped
+ * and Odometry
  */
 class LocalPositionPlugin : public MavRosPlugin {
 public:
@@ -46,9 +49,12 @@ public:
 		lp_nh.param("tf/send", tf_send, true);
 		lp_nh.param<std::string>("tf/frame_id", tf_frame_id, "local_origin");
 		lp_nh.param<std::string>("tf/child_frame_id", tf_child_frame_id, "fcu");
+		// nav_msgs/Odometry info
+		lp_nh.param<std::string>("tf/base_link_frame_id",tf_base_link_frame_id,"base_link");
 
 		local_position = lp_nh.advertise<geometry_msgs::PoseStamped>("pose", 10);
 		local_velocity = lp_nh.advertise<geometry_msgs::TwistStamped>("velocity", 10);
+		local_odom = lp_nh.advertise<nav_msgs::Odometry>("odom",10);
 	}
 
 	const message_map get_rx_handlers() {
@@ -63,19 +69,23 @@ private:
 
 	ros::Publisher local_position;
 	ros::Publisher local_velocity;
+	ros::Publisher local_odom;
 
 	std::string frame_id;		//!< frame for Pose
 	std::string tf_frame_id;	//!< origin for TF
 	std::string tf_child_frame_id;	//!< frame for TF
+	std::string tf_base_link_frame_id; //!< frame for TF (specifically Odometry message)
 	bool tf_send;
 
 	void handle_local_position_ned(const mavlink_message_t *msg, uint8_t sysid, uint8_t compid) {
 		mavlink_local_position_ned_t pos_ned;
 		mavlink_msg_local_position_ned_decode(msg, &pos_ned);
 
-		auto position = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.x, pos_ned.y, pos_ned.z));
-		auto velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.vx, pos_ned.vy, pos_ned.vz));
-		auto imu_data = uas->get_attitude_imu();
+		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
+		auto position = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.x, pos_ned.y, pos_ned.z),ned_enu);
+		auto velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.vx, pos_ned.vy, pos_ned.vz),ned_enu);
+		auto orientation = uas->get_attitude_orientation();
+		auto angular_velocity = uas->get_attitude_angular_velocity();
 
 		auto pose = boost::make_shared<geometry_msgs::PoseStamped>();
 		auto twist = boost::make_shared<geometry_msgs::TwistStamped>();
@@ -84,10 +94,10 @@ private:
 		twist->header = pose->header;
 
 		tf::pointEigenToMsg(position, pose->pose.position);
-		pose->pose.orientation = imu_data->orientation;
+		pose->pose.orientation = orientation;
 
 		tf::vectorEigenToMsg(velocity,twist->twist.linear);
-		twist->twist.angular = imu_data->angular_velocity;
+		twist->twist.angular = angular_velocity;
 		
 		local_position.publish(pose);
 		local_velocity.publish(twist);
@@ -99,7 +109,7 @@ private:
 			transform.header.frame_id = tf_frame_id;
 			transform.child_frame_id = tf_child_frame_id;
 
-			transform.transform.rotation = imu_data->orientation;
+			transform.transform.rotation = orientation;
 			tf::vectorEigenToMsg(position, transform.transform.translation);
 
 			uas->tf2_broadcaster.sendTransform(transform);

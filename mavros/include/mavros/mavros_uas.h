@@ -130,7 +130,7 @@ public:
 	/**
 	 * Update autopilot type on every HEARTBEAT
 	 */
-	void update_heartbeat(uint8_t type_, uint8_t autopilot_);
+	void update_heartbeat(uint8_t type_, uint8_t autopilot_, uint8_t base_mode_);
 
 	/**
 	 * Update autopilot connection status (every HEARTBEAT/conn_timeout)
@@ -151,6 +151,24 @@ public:
 	inline enum MAV_AUTOPILOT get_autopilot() {
 		uint8_t autopilot_ = autopilot;
 		return static_cast<enum MAV_AUTOPILOT>(autopilot_);
+	}
+
+	/**
+	 * @brief Returns arming status
+	 *
+	 * @note There may be race condition between SET_MODE and HEARTBEAT.
+	 */
+	inline bool get_armed() {
+		uint8_t base_mode_ = base_mode;
+		return base_mode_ & MAV_MODE_FLAG_SAFETY_ARMED;
+	}
+
+	/**
+	 * @brief Returns HIL status
+	 */
+	inline bool get_hil_state() {
+		uint8_t base_mode_ = base_mode;
+		return base_mode_ & MAV_MODE_FLAG_HIL_ENABLED;
 	}
 
 	/* -*- FCU target id pair -*- */
@@ -188,6 +206,12 @@ public:
 	 * @return orientation quaternion [ENU]
 	 */
 	geometry_msgs::Quaternion get_attitude_orientation();
+
+	/**
+	 * @brief Get angular velocity from IMU data
+	 * @return vector3
+	 */
+	geometry_msgs::Vector3 get_attitude_angular_velocity();
 
 
 	/* -*- GPS data -*- */
@@ -392,43 +416,71 @@ public:
 	}
 
 	/**
+	 * @brief Frame transform options when applying rotations to data
+	 */
+	enum TRANSFORM_TYPE{
+		BODY_TO_ENU
+		/*
+		NED_TO_ENU,
+		ENU_TO_NED,
+		NED_TO_BODY,
+		BODY_TO_NED,
+		ENU_TO_BODY,
+		*/
+	};
+
+	/**
 	 * @brief Transform frame between ROS and FCU. (Vector3d)
 	 *
 	 * General function. Please use specialized enu-ned and ned-enu variants.
 	 */
-	static Eigen::Vector3d transform_frame(const Eigen::Vector3d &vec);
+	static Eigen::Vector3d transform_frame(const Eigen::Vector3d &vec, const TRANSFORM_TYPE &transform);
 
 	/**
 	 * @brief Transform frame between ROS and FCU. (Quaterniond)
 	 *
 	 * General function. Please use specialized enu-ned and ned-enu variants.
 	 */
-	static Eigen::Quaterniond transform_frame(const Eigen::Quaterniond &q);
+	static Eigen::Quaterniond transform_frame(const Eigen::Quaterniond &q, const TRANSFORM_TYPE &transform);
 
 	/**
 	 * @brief Transform frame between ROS and FCU. (Covariance3d)
 	 *
 	 * General function. Please use specialized enu-ned and ned-enu variants.
 	 */
-	static Covariance3d transform_frame(const Covariance3d &cov);
+	static Covariance3d transform_frame(const Covariance3d &cov, const TRANSFORM_TYPE &transform);
 
 	// XXX TODO implement that function
-	static Covariance6d transform_frame(const Covariance6d &cov);
+	static Covariance6d transform_frame(const Covariance6d &cov, const TRANSFORM_TYPE &transform);
 
 	/**
 	 * @brief Transform from FCU to ROS frame.
 	 */
 	template<class T>
-	static inline T transform_frame_ned_enu(const T &in) {
-		return transform_frame(in);
+	static inline T transform_frame_ned_enu(const T &in, const TRANSFORM_TYPE &transform) {
+		return transform_frame(in,transform);
 	}
 
 	/**
 	 * @brief Transform from ROS to FCU frame.
 	 */
 	template<class T>
-	static inline T transform_frame_enu_ned(const T &in) {
-		return transform_frame(in);
+	static inline T transform_frame_enu_ned(const T &in, const TRANSFORM_TYPE &transform) {
+		return transform_frame(in,transform);
+	}
+
+	/**
+	 * @brief Transform heading from ROS to FCU frame.
+	 */
+	static inline double transform_frame_yaw_enu_ned(double yaw) {
+		return transform_frame_yaw(yaw);
+	}
+
+	/**
+	 * @brief Transform heading from FCU to ROS frame.
+	 */
+	static inline double transform_frame_yaw_ned_enu(double yaw) {
+		return transform_frame_yaw(yaw);
 	}
 
 private:
@@ -436,6 +488,7 @@ private:
 
 	std::atomic<uint8_t> type;
 	std::atomic<uint8_t> autopilot;
+	std::atomic<uint8_t> base_mode;
 
 	uint8_t target_system;
 	uint8_t target_component;
@@ -454,5 +507,9 @@ private:
 
 	std::atomic<bool> fcu_caps_known;
 	std::atomic<uint64_t> fcu_capabilities;
+
+	static inline double transform_frame_yaw(double yaw) {
+		return -yaw;
+	}
 };
 };	// namespace mavros
