@@ -88,6 +88,11 @@ private:
 		auto orientation = uas->get_attitude_orientation();
 		auto angular_velocity = uas->get_attitude_angular_velocity();
 
+		// Here the orientation quaternion is describing the rotation from the body frame 
+		// to the ENU frame.  We also have the velocity expressed in the ENU frame.  We
+		// Therefore need to calculate the inverse quaternion to find the transformation
+		// from the ENU frame to the body frame.  Then we can apply this rotation to the 
+		// velocity expressed in the ENU frame to get the body frame velocity.  
 		auto enu_to_body_quad = Eigen::Quaterniond(orientation.w, orientation.x, orientation.y, orientation.z).inverse();
 		auto enu_angular_velocity = Eigen::Vector3d(angular_velocity.x, angular_velocity.y, angular_velocity.z);
 		Eigen::Transform<double, 3, Eigen::Affine> enu_to_body_rot(enu_to_body_quad);
