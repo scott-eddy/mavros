@@ -23,10 +23,13 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/TransformStamped.h>
 
+#include <nav_msgs/Odometry.h>
+
 namespace mavplugin {
 /**
  * @brief Local position plugin.
- * Publish local position to TF and PositionStamped
+ * Publish local position to TF, PositionStamped, TwistStamped
+ * and Odometry
  */
 class LocalPositionPlugin : public MavRosPlugin {
 public:
@@ -46,9 +49,12 @@ public:
 		lp_nh.param("tf/send", tf_send, true);
 		lp_nh.param<std::string>("tf/frame_id", tf_frame_id, "local_origin");
 		lp_nh.param<std::string>("tf/child_frame_id", tf_child_frame_id, "fcu");
+		// nav_msgs/Odometry info
+		lp_nh.param<std::string>("tf/base_link_frame_id",tf_base_link_frame_id,"base_link");
 
 		local_position = lp_nh.advertise<geometry_msgs::PoseStamped>("pose", 10);
 		local_velocity = lp_nh.advertise<geometry_msgs::TwistStamped>("velocity", 10);
+		local_odom = lp_nh.advertise<nav_msgs::Odometry>("odom",10);
 	}
 
 	const message_map get_rx_handlers() {
