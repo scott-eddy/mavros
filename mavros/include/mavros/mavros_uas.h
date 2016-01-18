@@ -416,43 +416,57 @@ public:
 	}
 
 	/**
+	 * @brief Frame transform options when applying rotations to data
+	 */
+	enum TRANSFORM_TYPE{
+		BODY_TO_ENU
+		/*
+		NED_TO_ENU,
+		ENU_TO_NED,
+		NED_TO_BODY,
+		BODY_TO_NED,
+		ENU_TO_BODY,
+		*/
+	};
+
+	/**
 	 * @brief Transform frame between ROS and FCU. (Vector3d)
 	 *
 	 * General function. Please use specialized enu-ned and ned-enu variants.
 	 */
-	static Eigen::Vector3d transform_frame(const Eigen::Vector3d &vec);
+	static Eigen::Vector3d transform_frame(const Eigen::Vector3d &vec, const TRANSFORM_TYPE &transform);
 
 	/**
 	 * @brief Transform frame between ROS and FCU. (Quaterniond)
 	 *
 	 * General function. Please use specialized enu-ned and ned-enu variants.
 	 */
-	static Eigen::Quaterniond transform_frame(const Eigen::Quaterniond &q);
+	static Eigen::Quaterniond transform_frame(const Eigen::Quaterniond &q, const TRANSFORM_TYPE &transform);
 
 	/**
 	 * @brief Transform frame between ROS and FCU. (Covariance3d)
 	 *
 	 * General function. Please use specialized enu-ned and ned-enu variants.
 	 */
-	static Covariance3d transform_frame(const Covariance3d &cov);
+	static Covariance3d transform_frame(const Covariance3d &cov, const TRANSFORM_TYPE &transform);
 
 	// XXX TODO implement that function
-	static Covariance6d transform_frame(const Covariance6d &cov);
+	static Covariance6d transform_frame(const Covariance6d &cov, const TRANSFORM_TYPE &transform);
 
 	/**
 	 * @brief Transform from FCU to ROS frame.
 	 */
 	template<class T>
-	static inline T transform_frame_ned_enu(const T &in) {
-		return transform_frame(in);
+	static inline T transform_frame_ned_enu(const T &in, const TRANSFORM_TYPE &transform) {
+		return transform_frame(in,transform);
 	}
 
 	/**
 	 * @brief Transform from ROS to FCU frame.
 	 */
 	template<class T>
-	static inline T transform_frame_enu_ned(const T &in) {
-		return transform_frame(in);
+	static inline T transform_frame_enu_ned(const T &in, const TRANSFORM_TYPE &transform) {
+		return transform_frame(in,transform);
 	}
 
 	/**

@@ -76,7 +76,8 @@ private:
 		if (send_force)
 			ignore_all_except_a_xyz |= (1 << 9);
 
-		auto accel = UAS::transform_frame_enu_ned(accel_enu);
+		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
+		auto accel = UAS::transform_frame_enu_ned(accel_enu,enu_ned);
 
 		set_position_target_local_ned(stamp.toNSec() / 1000000,
 				MAV_FRAME_LOCAL_NED,

@@ -27,7 +27,8 @@ TEST(UAS, transform_frame__vector3d_123)
 	Eigen::Vector3d input(1, 2, 3);
 	Eigen::Vector3d expected(1, -2, -3);
 
-	auto out = UAS::transform_frame(input);
+	UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
+	auto out = UAS::transform_frame(input,enu_ned);
 
 	EXPECT_NEAR(expected.x(), out.x(), epsilon);
 	EXPECT_NEAR(expected.y(), out.y(), epsilon);
@@ -39,7 +40,8 @@ TEST(UAS, transform_frame__quaterniond_123)
 	auto input = UAS::quaternion_from_rpy(1.0, 2.0, 3.0);
 	auto expected = UAS::quaternion_from_rpy(1.0, -2.0, -3.0);
 
-	auto out = UAS::transform_frame(input);
+	UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
+	auto out = UAS::transform_frame(input,enu_ned);
 
 	EXPECT_QUATERNION(expected, out, epsilon);
 }
@@ -63,7 +65,8 @@ TEST(UAS, transform_frame__covariance3x3)
 		7.0, -8.0, -9.0
 	}};
 
-	auto out = UAS::transform_frame(input);
+	UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
+	auto out = UAS::transform_frame(input,enu_ned);
 
 	for (size_t idx = 0; idx < expected.size(); idx++) {
 		SCOPED_TRACE(idx);

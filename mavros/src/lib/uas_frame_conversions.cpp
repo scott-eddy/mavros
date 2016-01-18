@@ -21,24 +21,57 @@ using namespace mavros;
 // Eigen based functions
 
 //! +PI rotation around X (Roll) axis give us ROS or FCU representation
-static const Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+static Eigen::Quaterniond FRAME_ROTATE_Q;
 
 //! Transform for vector3
-static const Eigen::Transform<double, 3, Eigen::Affine> FRAME_TRANSFORM_VECTOR3(FRAME_ROTATE_Q);
+//static const Eigen::Transform<double, 3, Eigen::Affine> FRAME_TRANSFORM_VECTOR3(FRAME_ROTATE_Q);
 
 
-Eigen::Quaterniond UAS::transform_frame(const Eigen::Quaterniond &q)
+Eigen::Quaterniond UAS::transform_frame(const Eigen::Quaterniond &q, const UAS::TRANSFORM_TYPE &transform)
 {
+	switch(transform){
+		case BODY_TO_ENU:{
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+		default:{
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+	}
+
 	return FRAME_ROTATE_Q * q * FRAME_ROTATE_Q.inverse();
 }
 
-Eigen::Vector3d UAS::transform_frame(const Eigen::Vector3d &vec)
+Eigen::Vector3d UAS::transform_frame(const Eigen::Vector3d &vec, const UAS::TRANSFORM_TYPE &transform)
 {
+	switch(transform){
+		case BODY_TO_ENU:{
+			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+		default:{
+			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+	}
+
+	Eigen::Transform<double, 3, Eigen::Affine> FRAME_TRANSFORM_VECTOR3(FRAME_ROTATE_Q);
 	return FRAME_TRANSFORM_VECTOR3 * vec;
 }
 
-UAS::Covariance3d UAS::transform_frame(const Covariance3d &cov)
+UAS::Covariance3d UAS::transform_frame(const Covariance3d &cov, const UAS::TRANSFORM_TYPE &transform)
 {
+	switch(transform){
+		case BODY_TO_ENU:{
+			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+		default:{
+			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+	}
 	Covariance3d cov_out_;
 	EigenMapConstCovariance3d cov_in(cov.data());
 	EigenMapCovariance3d cov_out(cov_out_.data());
@@ -50,8 +83,18 @@ UAS::Covariance3d UAS::transform_frame(const Covariance3d &cov)
 	return cov_out_;
 }
 
-UAS::Covariance6d UAS::transform_frame(const Covariance6d &cov)
+UAS::Covariance6d UAS::transform_frame(const Covariance6d &cov, const UAS::TRANSFORM_TYPE &transform)
 {
+	switch(transform){
+		case BODY_TO_ENU:{
+			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+		default:{
+			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+	}
 	Covariance6d cov_out_;
 	EigenMapConstCovariance6d cov_in(cov.data());
 	EigenMapCovariance6d cov_out(cov_out_.data());

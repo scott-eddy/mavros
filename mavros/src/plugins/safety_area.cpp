@@ -109,8 +109,9 @@ private:
 				p1x, p1y, p1z,
 				p2x, p2y, p2z);
 
-		auto p1 = UAS::transform_frame_enu_ned(Eigen::Vector3d(p1x, p1y, p1z));
-		auto p2 = UAS::transform_frame_enu_ned(Eigen::Vector3d(p2x, p2y, p2z));
+		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
+		auto p1 = UAS::transform_frame_enu_ned(Eigen::Vector3d(p1x, p1y, p1z),enu_ned);
+		auto p2 = UAS::transform_frame_enu_ned(Eigen::Vector3d(p2x, p2y, p2z),enu_ned);
 
 		safety_set_allowed_area(
 				MAV_FRAME_LOCAL_NED, // TODO: use enum from lib

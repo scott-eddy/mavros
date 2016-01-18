@@ -117,8 +117,9 @@ private:
 		const uint8_t ignore_all_except_q = (1 << 6) | (7 << 0);
 		float q[4];
 
+		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
 		UAS::quaternion_to_mavlink(
-				UAS::transform_frame_enu_ned(Eigen::Quaterniond(tr.rotation())),
+				UAS::transform_frame_enu_ned(Eigen::Quaterniond(tr.rotation()),enu_ned),
 				q);
 
 		set_attitude_target(stamp.toNSec() / 1000000,
@@ -139,7 +140,8 @@ private:
 		const uint8_t ignore_all_except_rpy = (1 << 7) | (1 << 6);
 		float q[4] = { 1.0, 0.0, 0.0, 0.0 };
 
-		auto av = UAS::transform_frame_enu_ned(ang_vel);
+		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
+		auto av = UAS::transform_frame_enu_ned(ang_vel,enu_ned);
 
 		set_attitude_target(stamp.toNSec() / 1000000,
 				ignore_all_except_rpy,

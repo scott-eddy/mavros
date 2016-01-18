@@ -87,17 +87,17 @@ private:
 		 * gyroscope. (body-fixed NED -> ENU)
 		 */
 
-
+		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
 		auto int_xy = UAS::transform_frame_enu_ned(
 				Eigen::Vector3d(
 						flow_rad.integrated_x,
 						flow_rad.integrated_y,
-						0.0));
+						0.0),enu_ned);
 		auto int_gyro = UAS::transform_frame_enu_ned(
 				Eigen::Vector3d(
 						flow_rad.integrated_xgyro,
 						flow_rad.integrated_ygyro,
-						flow_rad.integrated_zgyro));
+						flow_rad.integrated_zgyro),enu_ned);
 
 		auto flow_rad_msg = boost::make_shared<mavros_msgs::OpticalFlowRad>();
 

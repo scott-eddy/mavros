@@ -69,18 +69,21 @@ private:
 
 	ros::Publisher local_position;
 	ros::Publisher local_velocity;
+	ros::Publisher local_odom;
 
 	std::string frame_id;		//!< frame for Pose
 	std::string tf_frame_id;	//!< origin for TF
 	std::string tf_child_frame_id;	//!< frame for TF
+	std::string tf_base_link_frame_id; //!< frame for TF (specifically Odometry message)
 	bool tf_send;
 
 	void handle_local_position_ned(const mavlink_message_t *msg, uint8_t sysid, uint8_t compid) {
 		mavlink_local_position_ned_t pos_ned;
 		mavlink_msg_local_position_ned_decode(msg, &pos_ned);
 
-		auto position = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.x, pos_ned.y, pos_ned.z));
-		auto velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.vx, pos_ned.vy, pos_ned.vz));
+		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
+		auto position = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.x, pos_ned.y, pos_ned.z),ned_enu);
+		auto velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.vx, pos_ned.vy, pos_ned.vz),ned_enu);
 		auto orientation = uas->get_attitude_orientation();
 		auto angular_velocity = uas->get_attitude_angular_velocity();
 

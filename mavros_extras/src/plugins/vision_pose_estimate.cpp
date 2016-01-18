@@ -113,9 +113,11 @@ private:
 		}
 		last_transform_stamp = stamp;
 
-		auto position = UAS::transform_frame_enu_ned(Eigen::Vector3d(tr.translation()));
+		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
+		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
+		auto position = UAS::transform_frame_enu_ned(Eigen::Vector3d(tr.translation()),enu_ned);
 		auto rpy = UAS::quaternion_to_rpy(
-				UAS::transform_frame_ned_enu(Eigen::Quaterniond(tr.rotation())));
+				UAS::transform_frame_ned_enu(Eigen::Quaterniond(tr.rotation()),ned_enu));
 
 		vision_position_estimate(stamp.toNSec() / 1000,
 				position.x(), position.y(), position.z(),
