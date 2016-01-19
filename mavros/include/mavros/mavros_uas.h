@@ -419,14 +419,10 @@ public:
 	 * @brief Frame transform options when applying rotations to data
 	 */
 	enum TRANSFORM_TYPE{
-		BODY_TO_ENU
-		/*
+		PLATFORM_TO_ENU,
+		ENU_TO_PLATFORM,
 		NED_TO_ENU,
-		ENU_TO_NED,
-		NED_TO_BODY,
-		BODY_TO_NED,
-		ENU_TO_BODY,
-		*/
+		ENU_TO_NED
 	};
 
 	/**
@@ -457,16 +453,32 @@ public:
 	 * @brief Transform from FCU to ROS frame.
 	 */
 	template<class T>
-	static inline T transform_frame_ned_enu(const T &in, const TRANSFORM_TYPE &transform) {
-		return transform_frame(in,transform);
+	static inline T transform_frame_ned_enu(const T &in) {
+		return transform_frame(in,TRANSFORM_TYPE::NED_TO_ENU);
 	}
 
 	/**
 	 * @brief Transform from ROS to FCU frame.
 	 */
 	template<class T>
-	static inline T transform_frame_enu_ned(const T &in, const TRANSFORM_TYPE &transform) {
-		return transform_frame(in,transform);
+	static inline T transform_frame_enu_ned(const T &in) {
+		return transform_frame(in,TRANSFORM_TYPE::ENU_TO_NED);
+	}
+
+	/**
+	 * @brief Transform from ROS to FCU frame.
+	 */
+	template<class T>
+	static inline T transform_frame_platform_enu(const T &in) {
+		return transform_frame(in,TRANSFORM_TYPE::PLATFORM_TO_ENU);
+	}
+
+	/**
+	 * @brief Transform from ROS to FCU frame.
+	 */
+	template<class T>
+	static inline T transform_frame_enu_platform(const T &in) {
+		return transform_frame(in,TRANSFORM_TYPE::ENU_TO_PLATFORM);
 	}
 
 	/**

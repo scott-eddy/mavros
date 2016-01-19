@@ -203,11 +203,10 @@ private:
 		mavlink_attitude_t att;
 		mavlink_msg_attitude_decode(msg, &att);
 
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto orientation = UAS::transform_frame_ned_enu(
-				UAS::quaternion_from_rpy(att.roll, att.pitch, att.yaw),ned_enu);
-		auto gyro = UAS::transform_frame_ned_enu(
-				Eigen::Vector3d(att.rollspeed, att.pitchspeed, att.yawspeed),ned_enu);
+		auto orientation = UAS::transform_frame_platform_enu(
+				UAS::quaternion_from_rpy(att.roll, att.pitch, att.yaw));
+		auto gyro = UAS::transform_frame_platform_enu(
+				Eigen::Vector3d(att.rollspeed, att.pitchspeed, att.yawspeed));
 
 		publish_imu_data(att.time_boot_ms, orientation, gyro);
 	}
@@ -221,11 +220,10 @@ private:
 		has_att_quat = true;
 
 		// MAVLink quaternion exactly match Eigen convention
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto orientation = UAS::transform_frame_ned_enu(
-				Eigen::Quaterniond(att_q.q1, att_q.q2, att_q.q3, att_q.q4),ned_enu);
-		auto gyro = UAS::transform_frame_ned_enu(
-				Eigen::Vector3d(att_q.rollspeed, att_q.pitchspeed, att_q.yawspeed),ned_enu);
+		auto orientation = UAS::transform_frame_platform_enu(
+				Eigen::Quaterniond(att_q.q1, att_q.q2, att_q.q3, att_q.q4));
+		auto gyro = UAS::transform_frame_platform_enu(
+				Eigen::Vector3d(att_q.rollspeed, att_q.pitchspeed, att_q.yawspeed));
 
 		publish_imu_data(att_q.time_boot_ms, orientation, gyro);
 	}
@@ -240,20 +238,19 @@ private:
 		auto header = uas->synchronized_header(frame_id, imu_hr.time_usec);
 
 		//! @todo make more paranoic check of HIGHRES_IMU.fields_updated
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
 
 		// accelerometer + gyroscope data available
 		if (imu_hr.fields_updated & ((7 << 3) | (7 << 0))) {
-			auto gyro = UAS::transform_frame_ned_enu(Eigen::Vector3d(imu_hr.xgyro, imu_hr.ygyro, imu_hr.zgyro),ned_enu);
-			auto accel = UAS::transform_frame_ned_enu(Eigen::Vector3d(imu_hr.xacc, imu_hr.yacc, imu_hr.zacc),ned_enu);
+			auto gyro = UAS::transform_frame_platform_enu(Eigen::Vector3d(imu_hr.xgyro, imu_hr.ygyro, imu_hr.zgyro));
+			auto accel = UAS::transform_frame_platform_enu(Eigen::Vector3d(imu_hr.xacc, imu_hr.yacc, imu_hr.zacc));
 
 			publish_imu_data_raw(header, gyro, accel);
 		}
 
 		// magnetometer data available
 		if (imu_hr.fields_updated & (7 << 6)) {
-			auto mag_field = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-					Eigen::Vector3d(imu_hr.xmag, imu_hr.ymag, imu_hr.zmag) * GAUSS_TO_TESLA,ned_enu);
+			auto mag_field = UAS::transform_frame_platform_enu<Eigen::Vector3d>(
+					Eigen::Vector3d(imu_hr.xmag, imu_hr.ymag, imu_hr.zmag) * GAUSS_TO_TESLA);
 
 			publish_mag(header, mag_field);
 		}
@@ -289,11 +286,10 @@ private:
 		auto header = uas->synchronized_header(frame_id, imu_raw.time_usec);
 
 		//! @note APM send SCALED_IMU data as RAW_IMU
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto gyro = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xgyro, imu_raw.ygyro, imu_raw.zgyro) * MILLIRS_TO_RADSEC,ned_enu);
-		auto accel = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xacc, imu_raw.yacc, imu_raw.zacc),ned_enu);
+		auto gyro = UAS::transform_frame_platform_enu<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xgyro, imu_raw.ygyro, imu_raw.zgyro) * MILLIRS_TO_RADSEC);
+		auto accel = UAS::transform_frame_platform_enu<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xacc, imu_raw.yacc, imu_raw.zacc));
 
 		if (uas->is_ardupilotmega())
 			accel *= MILLIG_TO_MS2;
@@ -307,8 +303,8 @@ private:
 		}
 
 		/* -*- magnetic vector -*- */
-		auto mag_field = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xmag, imu_raw.ymag, imu_raw.zmag) * MILLIT_TO_TESLA,ned_enu);
+		auto mag_field = UAS::transform_frame_platform_enu<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xmag, imu_raw.ymag, imu_raw.zmag) * MILLIT_TO_TESLA);
 
 		publish_mag(header, mag_field);
 	}
@@ -326,17 +322,16 @@ private:
 
 		auto header = uas->synchronized_header(frame_id, imu_raw.time_boot_ms);
 
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto gyro = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xgyro, imu_raw.ygyro, imu_raw.zgyro) * MILLIRS_TO_RADSEC,ned_enu);
-		auto accel = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xacc, imu_raw.yacc, imu_raw.zacc) * MILLIG_TO_MS2,ned_enu);
+		auto gyro = UAS::transform_frame_platform_enu<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xgyro, imu_raw.ygyro, imu_raw.zgyro) * MILLIRS_TO_RADSEC);
+		auto accel = UAS::transform_frame_platform_enu<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xacc, imu_raw.yacc, imu_raw.zacc) * MILLIG_TO_MS2);
 
 		publish_imu_data_raw(header, gyro, accel);
 
 		/* -*- magnetic vector -*- */
-		auto mag_field = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xmag, imu_raw.ymag, imu_raw.zmag) * MILLIT_TO_TESLA,ned_enu);
+		auto mag_field = UAS::transform_frame_platform_enu<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xmag, imu_raw.ymag, imu_raw.zmag) * MILLIT_TO_TESLA);
 
 		publish_mag(header, mag_field);
 	}

@@ -30,8 +30,14 @@ static Eigen::Quaterniond FRAME_ROTATE_Q;
 Eigen::Quaterniond UAS::transform_frame(const Eigen::Quaterniond &q, const UAS::TRANSFORM_TYPE &transform)
 {
 	switch(transform){
-		case BODY_TO_ENU:{
+		case PLATFORM_TO_ENU:
+		case ENU_TO_PLATFORM:{
 			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+		case NED_TO_ENU:
+		case ENU_TO_NED:{
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, M_PI_2);
 			break;
 		}
 		default:{
@@ -46,8 +52,14 @@ Eigen::Quaterniond UAS::transform_frame(const Eigen::Quaterniond &q, const UAS::
 Eigen::Vector3d UAS::transform_frame(const Eigen::Vector3d &vec, const UAS::TRANSFORM_TYPE &transform)
 {
 	switch(transform){
-		case BODY_TO_ENU:{
-			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+		case PLATFORM_TO_ENU:
+		case ENU_TO_PLATFORM:{
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+		case NED_TO_ENU:
+		case ENU_TO_NED:{
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, M_PI_2);
 			break;
 		}
 		default:{
@@ -63,12 +75,18 @@ Eigen::Vector3d UAS::transform_frame(const Eigen::Vector3d &vec, const UAS::TRAN
 UAS::Covariance3d UAS::transform_frame(const Covariance3d &cov, const UAS::TRANSFORM_TYPE &transform)
 {
 	switch(transform){
-		case BODY_TO_ENU:{
-			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+		case PLATFORM_TO_ENU:
+		case ENU_TO_PLATFORM:{
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+		case NED_TO_ENU:
+		case ENU_TO_NED:{
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, M_PI_2);
 			break;
 		}
 		default:{
-			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
 			break;
 		}
 	}
@@ -86,12 +104,18 @@ UAS::Covariance3d UAS::transform_frame(const Covariance3d &cov, const UAS::TRANS
 UAS::Covariance6d UAS::transform_frame(const Covariance6d &cov, const UAS::TRANSFORM_TYPE &transform)
 {
 	switch(transform){
-		case BODY_TO_ENU:{
-			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+		case PLATFORM_TO_ENU:
+		case ENU_TO_PLATFORM:{
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			break;
+		}
+		case NED_TO_ENU:
+		case ENU_TO_NED:{
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, M_PI_2);
 			break;
 		}
 		default:{
-			Eigen::Quaterniond FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
+			FRAME_ROTATE_Q = UAS::quaternion_from_rpy(M_PI, 0.0, 0.0);
 			break;
 		}
 	}

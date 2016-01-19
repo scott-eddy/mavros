@@ -90,9 +90,9 @@ private:
 		 * If you got similar issue please try update firmware first.
 		 */
 		const uint16_t ignore_all_except_xyz_y = (1 << 11) | (7 << 6) | (7 << 3);
-		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
-		auto p = UAS::transform_frame_enu_ned(Eigen::Vector3d(tr.translation()),enu_ned);
-		auto q = UAS::transform_frame_enu_ned(Eigen::Quaterniond(tr.rotation()),enu_ned);
+
+		auto p = UAS::transform_frame_enu_ned(Eigen::Vector3d(tr.translation()));
+		auto q = UAS::transform_frame_enu_ned(Eigen::Quaterniond(tr.rotation()));
 
 		set_position_target_local_ned(stamp.toNSec() / 1000000,
 				MAV_FRAME_LOCAL_NED,

@@ -74,10 +74,9 @@ private:
 		mavlink_msg_position_target_local_ned_decode(msg, &tgt);
 
 		// Transform frame NED->ENU
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto position = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.x, tgt.y, tgt.z),ned_enu);
-		auto velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.vx, tgt.vy, tgt.vz),ned_enu);
-		auto af = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.afx, tgt.afy, tgt.afz),ned_enu);
+		auto position = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.x, tgt.y, tgt.z));
+		auto velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.vx, tgt.vy, tgt.vz));
+		auto af = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.afx, tgt.afy, tgt.afz));
 		float yaw = UAS::transform_frame_yaw_ned_enu(tgt.yaw);
 		float yaw_rate = UAS::transform_frame_yaw_ned_enu(tgt.yaw_rate);
 
@@ -100,9 +99,8 @@ private:
 		mavlink_msg_position_target_global_int_decode(msg, &tgt);
 
 		// Transform frame NED->ENU
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.vx, tgt.vy, tgt.vz),ned_enu);
-		auto af = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.afx, tgt.afy, tgt.afz),ned_enu);
+		auto velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.vx, tgt.vy, tgt.vz));
+		auto af = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.afx, tgt.afy, tgt.afz));
 		float yaw = UAS::transform_frame_yaw_ned_enu(tgt.yaw);
 		float yaw_rate = UAS::transform_frame_yaw_ned_enu(tgt.yaw_rate);
 
@@ -127,9 +125,8 @@ private:
 		mavlink_msg_attitude_target_decode(msg, &tgt);
 
 		// Transform frame NED->ENU
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto orientation = UAS::transform_frame_ned_enu(Eigen::Quaterniond(tgt.q[0], tgt.q[1], tgt.q[2], tgt.q[3]),ned_enu);
-		auto body_rate = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.body_roll_rate, tgt.body_pitch_rate, tgt.body_yaw_rate),ned_enu);
+		auto orientation = UAS::transform_frame_ned_enu(Eigen::Quaterniond(tgt.q[0], tgt.q[1], tgt.q[2], tgt.q[3]));
+		auto body_rate = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.body_roll_rate, tgt.body_pitch_rate, tgt.body_yaw_rate));
 
 		auto target = boost::make_shared<mavros_msgs::AttitudeTarget>();
 
@@ -193,10 +190,9 @@ private:
 		tf::vectorMsgToEigen(req->acceleration_or_force, af);
 
 		// Transform frame ENU->NED
-		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
-		position = UAS::transform_frame_enu_ned(position,enu_ned);
-		velocity = UAS::transform_frame_enu_ned(velocity,enu_ned);
-		af = UAS::transform_frame_enu_ned(af,enu_ned);
+		position = UAS::transform_frame_enu_ned(position);
+		velocity = UAS::transform_frame_enu_ned(velocity);
+		af = UAS::transform_frame_enu_ned(af);
 		yaw = UAS::transform_frame_yaw_enu_ned(req->yaw);
 		yaw_rate = UAS::transform_frame_yaw_enu_ned(req->yaw_rate);
 
@@ -218,9 +214,8 @@ private:
 		tf::vectorMsgToEigen(req->acceleration_or_force, af);
 
 		// Transform frame ENU->NED
-		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
-		velocity = UAS::transform_frame_enu_ned(velocity,enu_ned);
-		af = UAS::transform_frame_enu_ned(af,enu_ned);
+		velocity = UAS::transform_frame_enu_ned(velocity);
+		af = UAS::transform_frame_enu_ned(af);
 		yaw = UAS::transform_frame_yaw_enu_ned(req->yaw);
 		yaw_rate = UAS::transform_frame_yaw_enu_ned(req->yaw_rate);
 
@@ -243,9 +238,8 @@ private:
 		tf::vectorMsgToEigen(req->body_rate, body_rate);
 
 		// Transform frame ENU->NED
-		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
-		orientation = UAS::transform_frame_enu_ned(orientation,enu_ned);
-		body_rate = UAS::transform_frame_enu_ned(body_rate,enu_ned);
+		orientation = UAS::transform_frame_enu_ned(orientation);
+		body_rate = UAS::transform_frame_enu_ned(body_rate);
 
 		set_attitude_target(
 				req->header.stamp.toNSec() / 1000000,
