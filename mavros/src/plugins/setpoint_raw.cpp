@@ -125,7 +125,7 @@ private:
 		mavlink_msg_attitude_target_decode(msg, &tgt);
 
 		// Transform frame NED->ENU
-		auto orientation = UAS::transform_frame_ned_enu(Eigen::Quaterniond(tgt.q[0], tgt.q[1], tgt.q[2], tgt.q[3]));
+		auto orientation = UAS::transform_orientation_ned_enu(Eigen::Quaterniond(tgt.q[0], tgt.q[1], tgt.q[2], tgt.q[3]));
 		auto body_rate = UAS::transform_frame_ned_enu(Eigen::Vector3d(tgt.body_roll_rate, tgt.body_pitch_rate, tgt.body_yaw_rate));
 
 		auto target = boost::make_shared<mavros_msgs::AttitudeTarget>();
@@ -231,20 +231,26 @@ private:
 	}
 
 	void attitude_cb(const mavros_msgs::AttitudeTarget::ConstPtr &req) {
-		Eigen::Quaterniond orientation;
-		Eigen::Vector3d body_rate;
+		Eigen::Quaterniond desired_orientation;
+		Eigen::Vector3d enu_angular_rate;
 
-		tf::quaternionMsgToEigen(req->orientation, orientation);
-		tf::vectorMsgToEigen(req->body_rate, body_rate);
+
+		tf::quaternionMsgToEigen(req->orientation, desired_orientation);
 
 		// Transform frame ENU->NED
-		orientation = UAS::transform_frame_enu_ned(orientation);
-		body_rate = UAS::transform_frame_enu_ned(body_rate);
+		auto ned_desired_orientation = UAS::transform_orientation_enu_ned(desired_orientation);
+		
+		Eigen::Quaterniond enu_orientation;
+		tf::quaternionMsgToEigen(uas->get_attitude_orientation(),enu_orientation);
+
+		auto body_rate = UAS::transform_frame_enu_body(enu_angular_rate,enu_orientation.inverse());
+
+		tf::vectorMsgToEigen(req->body_rate, body_rate);
 
 		set_attitude_target(
 				req->header.stamp.toNSec() / 1000000,
 				req->type_mask,
-				orientation,
+				desired_orientation,
 				body_rate,
 				req->thrust);
 	}

@@ -416,69 +416,126 @@ public:
 	}
 
 	/**
-	 * @brief Frame transform options when applying rotations to data
+	 * @brief Orientation transform options when applying rotations to data
 	 */
-	enum TRANSFORM_TYPE{
-		PLATFORM_TO_ENU,
-		ENU_TO_PLATFORM,
-		NED_TO_ENU,
-		ENU_TO_NED
+	enum class STATIC_TRANSFORM: uint8_t {
+		NED_TO_ENU, //! will change orinetation from being expressed WRT NED frame to WRT ENU frame
+		ENU_TO_NED  //! change from expressed WRT ENU frame to WRT NED frame
 	};
 
 	/**
-	 * @brief Transform frame between ROS and FCU. (Vector3d)
-	 *
+	 * @brief Transform representation of attitude from 1 frame to another
+	 * (e.g. transfrom attitude from representing  from base_link -> NED
+	 		 to representing base_link -> ENU)
+
 	 * General function. Please use specialized enu-ned and ned-enu variants.
 	 */
-	static Eigen::Vector3d transform_frame(const Eigen::Vector3d &vec, const TRANSFORM_TYPE &transform);
+	static Eigen::Quaterniond transform_orientation(const Eigen::Quaterniond &q, const STATIC_TRANSFORM transform);
 
 	/**
-	 * @brief Transform frame between ROS and FCU. (Quaterniond)
+	 * @brief Transform data experessed in one frame to another frame.
 	 *
 	 * General function. Please use specialized enu-ned and ned-enu variants.
 	 */
-	static Eigen::Quaterniond transform_frame(const Eigen::Quaterniond &q, const TRANSFORM_TYPE &transform);
+	static Eigen::Vector3d transform_frame(const Eigen::Vector3d &vec, const Eigen::Quaterniond &q);
 
 	/**
-	 * @brief Transform frame between ROS and FCU. (Covariance3d)
+	 * @brief Transform convariance expressed in one frame to another
 	 *
 	 * General function. Please use specialized enu-ned and ned-enu variants.
 	 */
-	static Covariance3d transform_frame(const Covariance3d &cov, const TRANSFORM_TYPE &transform);
+	static Covariance3d transform_frame(const Covariance3d &cov, const Eigen::Quaterniond &q);
 
 	// XXX TODO implement that function
-	static Covariance6d transform_frame(const Covariance6d &cov, const TRANSFORM_TYPE &transform);
+	static Covariance6d transform_frame(const Covariance6d &cov, const Eigen::Quaterniond &q);
 
 	/**
-	 * @brief Transform from FCU to ROS frame.
+	 * @brief Transform data experessed in one frame to another frame.
+	 *
+	 * General function. Please use specialized enu-ned and ned-enu variants.
+	 */
+	static Eigen::Vector3d transform_static_frame(const Eigen::Vector3d &vec, const STATIC_TRANSFORM transform);
+	
+	/**
+	 * @brief Transform convariance expressed in one frame to another
+	 *
+	 * General function. Please use specialized enu-ned and ned-enu variants.
+	 */
+	static Covariance3d transform_static_frame(const Covariance3d &cov, const STATIC_TRANSFORM transform);
+
+	// XXX TODO implement that function
+	static Covariance6d transform_static_frame(const Covariance6d &cov, const STATIC_TRANSFORM transform);
+
+	/**
+	 * @brief Transform from attitude represented WRT NED frame to attitude
+	 *		  represented WRT ENU frame
+	 */
+	template<class T>
+	static inline T transform_orientation_ned_enu(const T &in) {
+		return transform_orientation(in,STATIC_TRANSFORM::NED_TO_ENU);
+	}
+
+	/**
+	 * @brief Transform from attitude represented WRT ENU frame to
+	 *		  attitude represented WRT NED frame
+	 */
+	template<class T>
+	static inline T transform_orientation_enu_ned(const T &in) {
+		return transform_orientation(in,STATIC_TRANSFORM::ENU_TO_NED);
+	}
+
+	/**
+	 * @brief Transform data expressed in NED to ENU frame.
+	 *
 	 */
 	template<class T>
 	static inline T transform_frame_ned_enu(const T &in) {
-		return transform_frame(in,TRANSFORM_TYPE::NED_TO_ENU);
+		return transform_static_frame(in,STATIC_TRANSFORM::NED_TO_ENU);
 	}
 
 	/**
-	 * @brief Transform from ROS to FCU frame.
+	 * @brief Transform data expressed in ENU to NED frame.
+	 *
 	 */
 	template<class T>
 	static inline T transform_frame_enu_ned(const T &in) {
-		return transform_frame(in,TRANSFORM_TYPE::ENU_TO_NED);
+		return transform_static_frame(in,STATIC_TRANSFORM::ENU_TO_NED);
 	}
 
 	/**
-	 * @brief Transform from ROS to FCU frame.
+	 * @brief Transform data expressed in body-fixed frame to NED frame.
+	 * Assumes quaternion represents rotation from body-fixed frame to NED frame.
 	 */
 	template<class T>
-	static inline T transform_frame_platform_enu(const T &in) {
-		return transform_frame(in,TRANSFORM_TYPE::PLATFORM_TO_ENU);
+	static inline T transform_frame_body_ned(const T &in,const Eigen::Quaterniond &q) {
+		return transform_frame(in,q);
 	}
 
 	/**
-	 * @brief Transform from ROS to FCU frame.
+	 * @brief Transform data expressed in NED to body-fixed frame.
+	 * Assumes quaternion represents rotation from NED to body-fixed frame.
 	 */
 	template<class T>
-	static inline T transform_frame_enu_platform(const T &in) {
-		return transform_frame(in,TRANSFORM_TYPE::ENU_TO_PLATFORM);
+	static inline T transform_frame_ned_body(const T &in,const Eigen::Quaterniond &q) {
+		return transform_frame(in,q);
+	}
+
+	/**
+	 * @brief Transform data expressed in body-fixed frame to ENU frame.
+	 * Assumes quaternion represents rotation from body-fixed frame to ENU frame.
+	 */
+	template<class T>
+	static inline T transform_frame_body_enu(const T &in,const Eigen::Quaterniond &q) {
+		return transform_frame(in,q);
+	}
+
+	/**
+	 * @brief Transform data expressed in ENU to body-fixed frame.
+	 * Assumes quaternion represents rotation from ENU to body-fixed frame.
+	 */
+	template<class T>
+	static inline T transform_frame_enu_body(const T &in,const Eigen::Quaterniond &q) {
+		return transform_frame(in,q);
 	}
 
 	/**

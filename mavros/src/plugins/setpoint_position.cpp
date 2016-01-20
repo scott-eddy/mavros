@@ -92,7 +92,7 @@ private:
 		const uint16_t ignore_all_except_xyz_y = (1 << 11) | (7 << 6) | (7 << 3);
 
 		auto p = UAS::transform_frame_enu_ned(Eigen::Vector3d(tr.translation()));
-		auto q = UAS::transform_frame_enu_ned(Eigen::Quaterniond(tr.rotation()));
+		auto q = UAS::transform_orientation_enu_ned(Eigen::Quaterniond(tr.rotation()));
 
 		set_position_target_local_ned(stamp.toNSec() / 1000000,
 				MAV_FRAME_LOCAL_NED,

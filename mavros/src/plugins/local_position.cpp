@@ -84,19 +84,16 @@ private:
 		auto enu_position = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.x, pos_ned.y, pos_ned.z));
 		auto enu_velocity = UAS::transform_frame_ned_enu(Eigen::Vector3d(pos_ned.vx, pos_ned.vy, pos_ned.vz));
 
-		auto orientation = uas->get_attitude_orientation();
-		auto angular_velocity = uas->get_attitude_angular_velocity();
+		auto enu_orientation_msg = uas->get_attitude_orientation();
+		auto enu_angular_velocity_msg = uas->get_attitude_angular_velocity();
+		Eigen::Quaterniond enu_orientation;
+		Eigen::Vector3d enu_angular_velocity;
+		tf::quaternionMsgToEigen(enu_orientation_msg,enu_orientation);
+		tf::vectorMsgToEigen(enu_angular_velocity_msg,enu_angular_velocity);
 
-		// Here the orientation quaternion is describing the rotation from the body frame 
-		// to the ENU frame.  We also have the velocity expressed in the ENU frame.  We
-		// Therefore need to calculate the inverse quaternion to find the transformation
-		// from the ENU frame to the body frame.  Then we can apply this rotation to the 
-		// velocity expressed in the ENU frame to get the body frame velocity.  
-		auto enu_to_body_quad = Eigen::Quaterniond(orientation.w, orientation.x, orientation.y, orientation.z).inverse();
-		auto enu_angular_velocity = Eigen::Vector3d(angular_velocity.x, angular_velocity.y, angular_velocity.z);
-		Eigen::Transform<double, 3, Eigen::Affine> enu_to_body_rot(enu_to_body_quad);
-		auto body_linear_velocity = enu_to_body_rot * enu_velocity;
-		auto body_angular_velocity = enu_to_body_rot * enu_angular_velocity;
+		
+		auto body_linear_velocity = UAS::transform_frame_enu_body(enu_velocity,enu_orientation.inverse());
+		auto body_angular_velocity = UAS::transform_frame_enu_body(enu_angular_velocity,enu_orientation.inverse());
 
 		auto pose = boost::make_shared<geometry_msgs::PoseStamped>();
 		auto twist = boost::make_shared<geometry_msgs::TwistStamped>();
@@ -106,10 +103,10 @@ private:
 		twist->header = pose->header;
 
 		tf::pointEigenToMsg(enu_position, pose->pose.position);
-		pose->pose.orientation = orientation;
+		pose->pose.orientation = enu_orientation_msg;
 
 		tf::vectorEigenToMsg(enu_velocity,twist->twist.linear);
-		twist->twist.angular = angular_velocity;
+		twist->twist.angular = enu_angular_velocity_msg;
 		
 		local_position.publish(pose);
 		local_velocity.publish(twist);
@@ -130,7 +127,7 @@ private:
 			transform.header.frame_id = tf_frame_id;
 			transform.child_frame_id = tf_child_frame_id;
 
-			transform.transform.rotation = orientation;
+			transform.transform.rotation = enu_orientation_msg;
 			tf::vectorEigenToMsg(enu_position, transform.transform.translation);
 
 			uas->tf2_broadcaster.sendTransform(transform);
