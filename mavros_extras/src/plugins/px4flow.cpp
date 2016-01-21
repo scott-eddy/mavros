@@ -84,20 +84,18 @@ private:
 		 * Raw message with axes mapped to ROS conventions and temp in degrees celsius.
 		 *
 		 * The optical flow camera is essentially an angular sensor, so conversion is like
-		 * gyroscope. (body-fixed NED -> ENU)
+		 * gyroscope. (body-fixed -> ENU)
 		 */
-
-		UAS::TRANSFORM_TYPE enu_ned = UAS::BODY_TO_ENU;
-		auto int_xy = UAS::transform_frame_enu_ned(
+		auto int_xy = UAS::transform_frame_platform_enu(
 				Eigen::Vector3d(
 						flow_rad.integrated_x,
 						flow_rad.integrated_y,
-						0.0),enu_ned);
-		auto int_gyro = UAS::transform_frame_enu_ned(
+						0.0));
+		auto int_gyro = UAS::transform_frame_platform_enu(
 				Eigen::Vector3d(
 						flow_rad.integrated_xgyro,
 						flow_rad.integrated_ygyro,
-						flow_rad.integrated_zgyro),enu_ned);
+						flow_rad.integrated_zgyro));
 
 		auto flow_rad_msg = boost::make_shared<mavros_msgs::OpticalFlowRad>();
 

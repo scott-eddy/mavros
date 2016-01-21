@@ -66,7 +66,11 @@ public:
 
 		uas = &uas_;
 
-		imu_nh.param<std::string>("frame_id", frame_id, "fcu");
+		// we rotate the data from the aircraft-frame to the base_link frame.
+		// Additionally we report the orientation of the vehicle to describe the 
+		// transformation from the ENU frame to the base_link frame (ENU <-> base_link).  
+		// THIS ORIENTATION IS NOT THE SAME AS THAT REPORTED BY THE FCU (NED <-> aircraft)  
+		imu_nh.param<std::string>("frame_id", frame_id, "base_link"); 
 		imu_nh.param("linear_acceleration_stdev", linear_stdev, 0.0003);		// check default by MPU6000 spec
 		imu_nh.param("angular_velocity_stdev", angular_stdev, 0.02 * (M_PI / 180.0));	// check default by MPU6000 spec
 		imu_nh.param("orientation_stdev", orientation_stdev, 1.0);
@@ -203,13 +207,18 @@ private:
 		mavlink_attitude_t att;
 		mavlink_msg_attitude_decode(msg, &att);
 
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto orientation = UAS::transform_frame_ned_enu(
-				UAS::quaternion_from_rpy(att.roll, att.pitch, att.yaw),ned_enu);
-		auto gyro = UAS::transform_frame_ned_enu(
-				Eigen::Vector3d(att.rollspeed, att.pitchspeed, att.yawspeed),ned_enu);
+		//Here we have rpy describing the rotation: aircraft->NED
+		//We need to change this to aircraft->ENU
+		//And finally change it to baselink->ENU
+		auto enu_baselink_orientation = UAS::transform_orientation_aircraft_baselink(
+				UAS::transform_orientation_ned_enu(
+				UAS::quaternion_from_rpy(att.roll, att.pitch, att.yaw)));
+		//Here we have the angular velocity expressed in the aircraft frame
+		//We need to apply the static rotation to get it into the base_link frame
+		auto gyro = UAS::transform_frame_aircraft_baselink(
+				Eigen::Vector3d(att.rollspeed, att.pitchspeed, att.yawspeed));
 
-		publish_imu_data(att.time_boot_ms, orientation, gyro);
+		publish_imu_data(att.time_boot_ms, enu_baselink_orientation, gyro);
 	}
 
 	// almost the same as handle_attitude(), but for ATTITUDE_QUATERNION
@@ -220,14 +229,19 @@ private:
 		ROS_INFO_COND_NAMED(!has_att_quat, "imu", "IMU: Attitude quaternion IMU detected!");
 		has_att_quat = true;
 
-		// MAVLink quaternion exactly match Eigen convention
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto orientation = UAS::transform_frame_ned_enu(
-				Eigen::Quaterniond(att_q.q1, att_q.q2, att_q.q3, att_q.q4),ned_enu);
-		auto gyro = UAS::transform_frame_ned_enu(
-				Eigen::Vector3d(att_q.rollspeed, att_q.pitchspeed, att_q.yawspeed),ned_enu);
+		//MAVLink quaternion exactly matches Eigen convention
+		//Here we have rpy describing the rotation: aircraft->NED
+		//We need to change this to aircraft->ENU
+		//And finally change it to baselink->ENU
+		auto enu_orientation = UAS::transform_orientation_aircraft_baselink(
+							   UAS::transform_orientation_ned_enu(
+				Eigen::Quaterniond(att_q.q1, att_q.q2, att_q.q3, att_q.q4)));
+		//Here we have the angular velocity expressed in the aircraft frame
+		//We need to apply the static rotation to get it into the base_link frame
+		auto gyro = UAS::transform_frame_aircraft_baselink(
+				Eigen::Vector3d(att_q.rollspeed, att_q.pitchspeed, att_q.yawspeed));
 
-		publish_imu_data(att_q.time_boot_ms, orientation, gyro);
+		publish_imu_data(att_q.time_boot_ms, enu_orientation, gyro);
 	}
 
 	void handle_highres_imu(const mavlink_message_t *msg, uint8_t sysid, uint8_t compid) {
@@ -238,22 +252,21 @@ private:
 		has_hr_imu = true;
 
 		auto header = uas->synchronized_header(frame_id, imu_hr.time_usec);
-
 		//! @todo make more paranoic check of HIGHRES_IMU.fields_updated
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
 
 		// accelerometer + gyroscope data available
+		// Data is expressed in aircraft frame we need to rotate to base_link frame
 		if (imu_hr.fields_updated & ((7 << 3) | (7 << 0))) {
-			auto gyro = UAS::transform_frame_ned_enu(Eigen::Vector3d(imu_hr.xgyro, imu_hr.ygyro, imu_hr.zgyro),ned_enu);
-			auto accel = UAS::transform_frame_ned_enu(Eigen::Vector3d(imu_hr.xacc, imu_hr.yacc, imu_hr.zacc),ned_enu);
+			auto gyro = UAS::transform_frame_aircraft_baselink(Eigen::Vector3d(imu_hr.xgyro, imu_hr.ygyro, imu_hr.zgyro));
+			auto accel = UAS::transform_frame_aircraft_baselink(Eigen::Vector3d(imu_hr.xacc, imu_hr.yacc, imu_hr.zacc));
 
 			publish_imu_data_raw(header, gyro, accel);
 		}
 
 		// magnetometer data available
 		if (imu_hr.fields_updated & (7 << 6)) {
-			auto mag_field = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-					Eigen::Vector3d(imu_hr.xmag, imu_hr.ymag, imu_hr.zmag) * GAUSS_TO_TESLA,ned_enu);
+			auto mag_field = UAS::transform_frame_aircraft_baselink<Eigen::Vector3d>(
+					Eigen::Vector3d(imu_hr.xmag, imu_hr.ymag, imu_hr.zmag) * GAUSS_TO_TESLA);
 
 			publish_mag(header, mag_field);
 		}
@@ -289,11 +302,10 @@ private:
 		auto header = uas->synchronized_header(frame_id, imu_raw.time_usec);
 
 		//! @note APM send SCALED_IMU data as RAW_IMU
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto gyro = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xgyro, imu_raw.ygyro, imu_raw.zgyro) * MILLIRS_TO_RADSEC,ned_enu);
-		auto accel = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xacc, imu_raw.yacc, imu_raw.zacc),ned_enu);
+		auto gyro = UAS::transform_frame_aircraft_baselink<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xgyro, imu_raw.ygyro, imu_raw.zgyro) * MILLIRS_TO_RADSEC);
+		auto accel = UAS::transform_frame_aircraft_baselink<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xacc, imu_raw.yacc, imu_raw.zacc));
 
 		if (uas->is_ardupilotmega())
 			accel *= MILLIG_TO_MS2;
@@ -307,8 +319,8 @@ private:
 		}
 
 		/* -*- magnetic vector -*- */
-		auto mag_field = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xmag, imu_raw.ymag, imu_raw.zmag) * MILLIT_TO_TESLA,ned_enu);
+		auto mag_field = UAS::transform_frame_aircraft_baselink<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xmag, imu_raw.ymag, imu_raw.zmag) * MILLIT_TO_TESLA);
 
 		publish_mag(header, mag_field);
 	}
@@ -326,17 +338,16 @@ private:
 
 		auto header = uas->synchronized_header(frame_id, imu_raw.time_boot_ms);
 
-		UAS::TRANSFORM_TYPE ned_enu = UAS::BODY_TO_ENU;
-		auto gyro = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xgyro, imu_raw.ygyro, imu_raw.zgyro) * MILLIRS_TO_RADSEC,ned_enu);
-		auto accel = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xacc, imu_raw.yacc, imu_raw.zacc) * MILLIG_TO_MS2,ned_enu);
+		auto gyro = UAS::transform_frame_aircraft_baselink<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xgyro, imu_raw.ygyro, imu_raw.zgyro) * MILLIRS_TO_RADSEC);
+		auto accel = UAS::transform_frame_aircraft_baselink<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xacc, imu_raw.yacc, imu_raw.zacc) * MILLIG_TO_MS2);
 
 		publish_imu_data_raw(header, gyro, accel);
 
 		/* -*- magnetic vector -*- */
-		auto mag_field = UAS::transform_frame_ned_enu<Eigen::Vector3d>(
-				Eigen::Vector3d(imu_raw.xmag, imu_raw.ymag, imu_raw.zmag) * MILLIT_TO_TESLA,ned_enu);
+		auto mag_field = UAS::transform_frame_aircraft_baselink<Eigen::Vector3d>(
+				Eigen::Vector3d(imu_raw.xmag, imu_raw.ymag, imu_raw.zmag) * MILLIT_TO_TESLA);
 
 		publish_mag(header, mag_field);
 	}
