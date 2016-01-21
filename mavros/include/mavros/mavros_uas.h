@@ -420,7 +420,9 @@ public:
 	 */
 	enum class STATIC_TRANSFORM: uint8_t {
 		NED_TO_ENU, //! will change orinetation from being expressed WRT NED frame to WRT ENU frame
-		ENU_TO_NED  //! change from expressed WRT ENU frame to WRT NED frame
+		ENU_TO_NED,  //! change from expressed WRT ENU frame to WRT NED frame
+		AIRCRAFT_TO_BASELINK, //! change from expressed WRT aircraft frame to WRT to baselink frame
+		BASELINK_TO_AIRCRAFT //! change from expressed WRT baselnk to WRT aircraft
 	};
 
 	/**
@@ -485,6 +487,24 @@ public:
 	}
 
 	/**
+	 * @brief Transform from attitude represented WRT aircraft frame to
+	 *		  attitude represented WRT base_link frame
+	 */
+	template<class T>
+	static inline T transform_orientation_aircraft_baselink(const T &in) {
+		return transform_orientation(in,STATIC_TRANSFORM::AIRCRAFT_TO_BASELINK);
+	}
+
+	/**
+	 * @brief Transform from attitude represented WRT baselink frame to
+	 *		  attitude represented WRT body frame
+	 */
+	template<class T>
+	static inline T transform_orientation_baselink_aircraft(const T &in) {
+		return transform_orientation(in,STATIC_TRANSFORM::BASELINK_TO_AIRCRAFT);
+	}
+
+	/**
 	 * @brief Transform data expressed in NED to ENU frame.
 	 *
 	 */
@@ -503,38 +523,74 @@ public:
 	}
 
 	/**
-	 * @brief Transform data expressed in body-fixed frame to NED frame.
-	 * Assumes quaternion represents rotation from body-fixed frame to NED frame.
+	 * @brief Transform data expressed in Aircraft frame to Baselink frame.
+	 *
 	 */
 	template<class T>
-	static inline T transform_frame_body_ned(const T &in,const Eigen::Quaterniond &q) {
+	static inline T transform_frame_aircraft_baselink(const T &in) {
+		return transform_static_frame(in,STATIC_TRANSFORM::AIRCRAFT_TO_BASELINK);
+	}
+
+	/**
+	 * @brief Transform data expressed in Baselink frame to Aircraft frame.
+	 *
+	 */
+	template<class T>
+	static inline T transform_frame_baselink_aircraft(const T &in) {
+		return transform_static_frame(in,STATIC_TRANSFORM::BASELINK_TO_AIRCRAFT);
+	}
+
+	/**
+	 * @brief Transform data expressed in aircraft frame to NED frame.
+	 * Assumes quaternion represents rotation from aircraft frame to NED frame.
+	 */
+	template<class T>
+	static inline T transform_frame_aircraft_ned(const T &in,const Eigen::Quaterniond &q) {
 		return transform_frame(in,q);
 	}
 
 	/**
-	 * @brief Transform data expressed in NED to body-fixed frame.
-	 * Assumes quaternion represents rotation from NED to body-fixed frame.
+	 * @brief Transform data expressed in NED to aircraft frame.
+	 * Assumes quaternion represents rotation from NED to aircraft frame.
 	 */
 	template<class T>
-	static inline T transform_frame_ned_body(const T &in,const Eigen::Quaterniond &q) {
+	static inline T transform_frame_ned_aircraft(const T &in,const Eigen::Quaterniond &q) {
 		return transform_frame(in,q);
 	}
 
 	/**
-	 * @brief Transform data expressed in body-fixed frame to ENU frame.
-	 * Assumes quaternion represents rotation from body-fixed frame to ENU frame.
+	 * @brief Transform data expressed in aircraft frame to ENU frame.
+	 * Assumes quaternion represents rotation from aircraft frame to ENU frame.
 	 */
 	template<class T>
-	static inline T transform_frame_body_enu(const T &in,const Eigen::Quaterniond &q) {
+	static inline T transform_frame_aircraft_enu(const T &in,const Eigen::Quaterniond &q) {
 		return transform_frame(in,q);
 	}
 
 	/**
-	 * @brief Transform data expressed in ENU to body-fixed frame.
-	 * Assumes quaternion represents rotation from ENU to body-fixed frame.
+	 * @brief Transform data expressed in ENU to aircraft frame.
+	 * Assumes quaternion represents rotation from ENU to aircraft frame.
 	 */
 	template<class T>
-	static inline T transform_frame_enu_body(const T &in,const Eigen::Quaterniond &q) {
+	static inline T transform_frame_enu_aircraft(const T &in,const Eigen::Quaterniond &q) {
+		return transform_frame(in,q);
+	}
+
+	/**
+	 * @brief Transform data expressed in ENU to base_link frame.
+	 * Assumes quaternion represents rotation from ENU to base_link frame.
+	 */
+	template<class T>
+	static inline T transform_frame_enu_baselink(const T &in,const Eigen::Quaterniond &q) {
+		return transform_frame(in,q);
+	}
+
+	/**
+	 * @brief Transform data expressed in baselink to ENU frame.
+	 * Assumes quaternion represents rotation from basel_link to ENU frame.
+	 */
+	template<class T>
+	static inline T transform_frame_baselink_enu(const T &in,const Eigen::Quaterniond &q) {
 		return transform_frame(in,q);
 	}
 

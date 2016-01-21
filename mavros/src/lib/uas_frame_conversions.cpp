@@ -24,8 +24,12 @@ using namespace mavros;
 // a +PI/2 roation about Z (Up) gives the NED frame.  
 static const Eigen::Quaterniond NED_ENU_Q = UAS::quaternion_from_rpy(M_PI, 0.0, M_PI_2);
 
+// Static quaternion needed for rotating between aircraft and base_link frames
+// +PI rotation around X (Forward) axis transforms from Forward, Right, Down (aircraft) 
+// Fto Forward, Left, Up (base_link) frames.  
+static const Eigen::Quaterniond AIRCRAFT_BASELINK_Q = UAS::quaternion_from_rpy(M_PI, 0.0, M_PI_2);
 
-static Eigen::Quaterniond FRAME_ROTATE_Q;
+
 //! Transform for vector3
 //static const Eigen::Transform<double, 3, Eigen::Affine> FRAME_TRANSFORM_VECTOR3(FRAME_ROTATE_Q);
 
@@ -38,6 +42,11 @@ Eigen::Quaterniond UAS::transform_orientation(const Eigen::Quaterniond &q, const
 		case STATIC_TRANSFORM::NED_TO_ENU:
 		case STATIC_TRANSFORM::ENU_TO_NED:{
 			return NED_ENU_Q * q;
+			break;
+		}
+		case STATIC_TRANSFORM::AIRCRAFT_TO_BASELINK:
+		case STATIC_TRANSFORM::BASELINK_TO_AIRCRAFT:{
+			return AIRCRAFT_BASELINK_Q * q;
 			break;
 		}
 		default:{
@@ -56,6 +65,12 @@ Eigen::Vector3d UAS::transform_static_frame(const Eigen::Vector3d &vec, const UA
 		case STATIC_TRANSFORM::NED_TO_ENU:
 		case STATIC_TRANSFORM::ENU_TO_NED:{
 			Eigen::Affine3d FRAME_TRANSFORM_VECTOR3(NED_ENU_Q);
+			return FRAME_TRANSFORM_VECTOR3 * vec;
+			break;
+		}
+		case STATIC_TRANSFORM::AIRCRAFT_TO_BASELINK:
+		case STATIC_TRANSFORM::BASELINK_TO_AIRCRAFT:{
+			Eigen::Affine3d FRAME_TRANSFORM_VECTOR3(AIRCRAFT_BASELINK_Q);
 			return FRAME_TRANSFORM_VECTOR3 * vec;
 			break;
 		}
@@ -85,6 +100,19 @@ UAS::Covariance3d UAS::transform_static_frame(const Covariance3d &cov, const UAS
 			return cov_out_;
 			break;
 		}
+		case STATIC_TRANSFORM::AIRCRAFT_TO_BASELINK:
+		case STATIC_TRANSFORM::BASELINK_TO_AIRCRAFT:{
+			Covariance3d cov_out_;
+			EigenMapConstCovariance3d cov_in(cov.data());
+			EigenMapCovariance3d cov_out(cov_out_.data());
+
+			// code from imu_transformer tf2_sensor_msgs.h
+			//cov_out = FRAME_ROTATE_Q * cov_in * FRAME_ROTATE_Q.inverse();
+			// from comments on github about tf2_sensor_msgs.h
+			cov_out = cov_in * AIRCRAFT_BASELINK_Q;
+			return cov_out_;
+			break;
+		}
 		default:{
 			//We don't know the transform between the static frames.
 			//throw error and return given covariance
@@ -97,13 +125,12 @@ UAS::Covariance3d UAS::transform_static_frame(const Covariance3d &cov, const UAS
 
 UAS::Covariance6d UAS::transform_static_frame(const Covariance6d &cov, const UAS::STATIC_TRANSFORM transform)
 {
+	//! @todo implement me!!!
 	switch(transform){
 		default:{
 			Covariance6d cov_out_;
 			EigenMapConstCovariance6d cov_in(cov.data());
 			EigenMapCovariance6d cov_out(cov_out_.data());
-
-			//! @todo implement me!!!
 			ROS_ASSERT(false);
 			return cov_out_;
 		}
